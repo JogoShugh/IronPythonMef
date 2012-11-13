@@ -9,7 +9,126 @@ This is a fork from a [project by Bruno Lopes](https://github.com/brunomlopes/IL
 
 You want to write IronPython scripts to extend or create plugins for a .NET application. And, you want to `Export` types from IronPython / DLR to the CLR and `Import` types from the CLR. You've come to the right place. Keep reading.
 
-# Example
+IronPythonMef is the __solution__.
+
+# Single File Example
+
+1. You can download the code from here, or use NuGet to [get the package](https://www.nuget.org/packages/IronPythonMef).
+2. Then, create a new C# console app, and paste the code below in.
+3. Run it!
+
+```c#
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.Composition;
+using System.ComponentModel.Composition.Hosting;
+using System.ComponentModel.Composition.Primitives;
+using System.Reflection;
+using IronPython.Hosting;
+using IronPythonMef;
+
+namespace IronPythonMefInAMinute
+{
+    public interface IMessenger
+    {
+        string GetMessage();
+    }
+
+    public interface IConfig
+    {
+        string Intro { get; }
+    }
+
+    /// <summary>
+    /// Gets exported from IronPython into the CLR Demo instance.
+    /// </summary>
+    public static class PythonScript
+    {
+        public static readonly string Code =
+@"
+@export(IMessenger)
+class PythonMessenger(IMessenger):
+    def GetMessage(self):
+        return self.config.Intro + ' from IronPython'
+
+    @import_one(IConfig)
+    def import_config(self, config):
+        self.config = config
+";
+    }
+
+    /// <summary>
+    /// Also gets exported into the Demo instance.
+    /// </summary>
+    [Export(typeof(IMessenger))]
+    public class ClrMessenger : IMessenger
+    {
+        [Import(typeof(IConfig))]
+        public IConfig Config { get; set; }
+
+        public string GetMessage()
+        {
+            return Config.Intro + " from C#!";
+        }
+    }
+
+    /// <summary>
+    /// This will get imported into both the IronPython class and ClrMessenger.
+    /// </summary>
+    [Export(typeof(IConfig))]
+    public class Config : IConfig
+    {
+        public string Intro
+        {
+            get { return "Hello"; }
+        }
+    }
+
+    public class Demo
+    {
+        [ImportMany(typeof(IMessenger))]
+        public IEnumerable<IMessenger> Messengers { get; set; }
+
+        public Demo()
+        {
+            // Create IronPython
+            var engine = Python.CreateEngine();
+            var script = engine.CreateScriptSourceFromString(PythonScript.Code);
+
+            // Configure the engine with types
+            var typesYouWantPythonToHaveAccessTo = new[] { typeof(IMessenger), typeof(IConfig) };
+            var typeExtractor = new ExtractTypesFromScript(engine);
+            var exports = typeExtractor.GetPartsFromScript(script,
+                typesYouWantPythonToHaveAccessTo);
+
+            // Compose with MEF
+            var catalog = new AssemblyCatalog(Assembly.GetExecutingAssembly());
+            var container = new CompositionContainer(catalog);
+            var batch = new CompositionBatch(exports, new ComposablePart[] { });
+            container.Compose(batch);
+            container.SatisfyImportsOnce(this);
+        }
+
+        public static void Main(string[] args)
+        {
+            var demo = new Demo();
+
+            foreach (var messenger in demo.Messengers)
+            {
+                Console.WriteLine(messenger.GetMessage());
+            }
+
+            Console.Read();
+        }
+    }
+}
+```
+The output is simply:
+
+    Hello from IronPython
+    Hello from C#!
+
+# Longer Example
 
 Code is [here](https://github.com/JogoShugh/IronPythonMef/tree/master/src/IronPythonMef.Tests/Example).
 
