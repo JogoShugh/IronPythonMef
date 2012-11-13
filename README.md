@@ -13,8 +13,9 @@ IronPythonMef is the __solution__.
 
 # Single File Example
 
-1. You can download the code from here, or use NuGet to [get the package](https://www.nuget.org/packages/IronPythonMef).
-2. Then, create a new C# console app, and paste the code below in.
+1. Create a new C# console app
+2. You can download the code from here, or use NuGet to [get the package](https://www.nuget.org/packages/IronPythonMef).
+2. Replace the contents of `Program.cs` with the code below.
 3. Run it!
 
 ```c#
