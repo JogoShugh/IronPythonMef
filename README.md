@@ -168,7 +168,7 @@ pow 2 4
     }
 }
 ```
-## Then, my the test will __pass__!
+## Then, the test will __pass__!
 
 # How to load an IronPython script and inject .NET interfaces into it so that your .NET app can import its exports
 
