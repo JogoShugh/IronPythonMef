@@ -32,3 +32,21 @@ class Absolute(IOperation):
     @property
     def Usage(self):
         return "abs f -- calculates the absolute value of f"
+
+@export(IOperation)
+class Circumference(IOperation):
+    @import_one(IMathCheatSheet)
+    def import_cheatSheet(self, cheatSheet):
+        self.cheatSheet = cheatSheet
+
+    def Execute(self, d):
+        d = float(d)
+        return self.cheatSheet.Pi * d
+
+    @property
+    def Name(self):
+        return "crc"
+
+    @property 
+    def USage(self):
+        return "crc d -- calculaets the circumference of a circle with diameter d"

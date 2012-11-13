@@ -80,8 +80,10 @@
     <Compile Include="Example\CompositionHelper.cs" />
     <Compile Include="Example\MathWizard.cs" />
     <Compile Include="Example\MathWizardTests.cs" />
+    <Compile Include="Example\Operations\IMathCheatSheet.cs" />
     <Compile Include="Example\Operations\IOperation.cs" />
     <Compile Include="Example\Operations\CSharp.cs" />
+    <Compile Include="Example\Operations\MathCheatSheet.cs" />
     <Compile Include="MefImportAndExportTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

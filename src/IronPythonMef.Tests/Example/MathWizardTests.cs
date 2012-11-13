@@ -15,6 +15,7 @@ namespace IronPythonMef.Tests.Example
             new CompositionHelper().ComposeWithTypesExportedFromPythonAndCSharp(
                 mathWiz,
                 "Operations.Python.py",
+                typeof(IMathCheatSheet),
                 typeof(IOperation));
 
             const string mathScript =
@@ -22,6 +23,7 @@ namespace IronPythonMef.Tests.Example
 fac 6
 abs -99
 pow 2 4
+crc 3
 ";
             var results = mathWiz.ExecuteScript(mathScript).ToList();
 
@@ -29,6 +31,7 @@ pow 2 4
             Assert.AreEqual(720, results[1]);
             Assert.AreEqual(99f, results[2]);
             Assert.AreEqual(16m, results[3]);
+            Assert.AreEqual(9.4247782230377197d, results[4]);
         }
     }
 }
