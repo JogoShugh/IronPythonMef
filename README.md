@@ -174,7 +174,7 @@ pow 2 4
 
 __Whoah, that sounds like _crazy talk_!__ Really? Not anymore! Here's how the unit test does it:
 
-__CompositionHelper.cs:__
+## CompositionHelper.cs:
 
 ```c#
 using System;
