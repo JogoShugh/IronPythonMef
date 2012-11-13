@@ -3,7 +3,7 @@ IronPythonMef
 
 Import and Export types to and from IronPython for use with MEF -- the Managed Extensibility Framework for .NET
 
-This is a fork from a [project by Bruno Lopes](https://github.com/brunomlopes/ILoveLucene/tree/master/src/Plugins/IronPython). Thanks, Bruno!
+This is a fork from a [project by Bruno Lopes](https://github.com/brunomlopes/ILoveLucene/tree/master/src/Plugins/IronPython). __Thanks, Bruno!__ This was just [what I needed](http://stackoverflow.com/questions/13337319/using-mef-to-import-components-exported-by-ironpython-or-other-dlr-languages).
 
 # Problem
 
