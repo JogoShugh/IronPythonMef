@@ -229,6 +229,63 @@ new CompositionHelper().ComposeWithTypesExportedFromPythonAndCSharp(
     "Operations.Python.py",
     typeof(IOperation));
 ```
+# Importing from the CLR into IronPython
+
+This works too. It's not shown above, but the test cases and the MathWizard example has it.
+
+Suppose you wanted to inject constants into IronPython, or other applications, to have a consistent approximation of `Pi`, or whatever.
+
+## Definition and implementation in C#
+
+```c#
+namespace IronPythonMef.Tests.Example.Operations
+{
+    public interface IMathCheatSheet
+    {
+        float Pi { get; set; }
+    }
+}
+
+using System.ComponentModel.Composition;
+
+namespace IronPythonMef.Tests.Example.Operations
+{
+    [Export(typeof(IMathCheatSheet))]
+    public class MathCheatSheet : IMathCheatSheet
+    {
+        public MathCheatSheet()
+        {
+            Pi = 3.141592653589793f;
+        }
+
+        public float Pi { get; set; }
+    }
+}
+```
+
+## Imported via the `@import_one` IronPython decorator
+
+```python
+@export(IOperation)
+class Circumference(IOperation):
+    @import_one(IMathCheatSheet)
+    def import_cheatSheet(self, cheatSheet):
+        self.cheatSheet = cheatSheet
+
+    def Execute(self, d):
+        d = float(d)
+        return self.cheatSheet.Pi * d
+
+    @property
+    def Name(self):
+        return "crc"
+
+    @property 
+    def USage(self):
+        return "crc d -- calculaets the circumference of a circle with diameter d"
+```
+
+So, this last example demonstrates that even though `Circumference` is itself exported from IronPython, it firt gets its own import dependencies satisfied. Pretty awesome. All credit to the MEF team and Bruno on this.
 
 # Resources
 
