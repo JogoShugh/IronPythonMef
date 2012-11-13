@@ -235,7 +235,7 @@ This works too. It's not shown above, but the test cases and the MathWizard exam
 
 Suppose you wanted to inject constants into IronPython, or other applications, to have a consistent approximation of `Pi`, or whatever.
 
-## Definition and implementation in C#
+## Definition and implementation in .NET
 
 ```c#
 namespace IronPythonMef.Tests.Example.Operations
@@ -263,7 +263,7 @@ namespace IronPythonMef.Tests.Example.Operations
 }
 ```
 
-## Imported via the `@import_one` IronPython decorator
+## Import into IronPython via the `@import_one` decorator
 
 ```python
 @export(IOperation)
