@@ -405,7 +405,7 @@ class Circumference(IOperation):
         return "crc d -- calculaets the circumference of a circle with diameter d"
 ```
 
-So, this last example demonstrates that even though `Circumference` is itself exported from IronPython, it firt gets its own import dependencies satisfied. Pretty awesome. All credit to the MEF team and Bruno on this.
+So, this last example demonstrates that even though `Circumference` is itself exported from IronPython, it first gets its own import dependencies satisfied. Pretty awesome. All credit to the MEF team and Bruno on this.
 
 # Resources
 
