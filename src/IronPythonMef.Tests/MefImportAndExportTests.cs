@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
+using System.IO;
 using System.Linq;
 using IronPython.Hosting;
 using NUnit.Framework;
@@ -344,6 +345,30 @@ class StringItemSource:
         //        }
 
         [Test]
+        public void CanInjectTypesIntoIronPythonFileToAndExportThem()
+        {
+            var ironpythonDir = "IronPythonCommands".AsNewDirectoryInfo();
+            @"
+@export(IItemSource)
+class StringItemSource(BasePythonItemSource):
+    def GetAllItems(self):
+        return [""Item 1"", ""Item 2"", ""Item 3""]
+        ".WriteToFileInPath(ironpythonDir, "python.py");
+
+            var container = new CompositionContainer(new TypeCatalog(typeof(MockImporter)));
+
+
+            var engine = Python.CreateEngine();
+
+
+            var file = new IronPythonFile(new FileInfo(Path.Combine(ironpythonDir.FullName, "python.py")), engine, container,
+                               new ExtractTypesFromScript(engine), new[] { typeof(IItemSource), typeof(BasePythonItemSource) });
+
+            file.Compose();
+
+        }
+
+        [Test]
         public void ClassWithoutExportsResultsInZeroParts()
         {
             const string pythonCode = 
@@ -395,6 +420,25 @@ class StringItemSource(BasePythonItemSource):
         public Type TypedItemType
         {
             get { return typeof(string); }
+        }
+    }
+
+    public static class PathHelper
+    {
+        public static DirectoryInfo AsNewDirectoryInfo(this string path)
+        {
+            var configurationDirectory = new DirectoryInfo(path);
+            if (configurationDirectory.Exists)
+            {
+                configurationDirectory.Delete(true);
+            }
+            configurationDirectory.Create();
+            return configurationDirectory;
+        }
+
+        public static void WriteToFileInPath(this string content, DirectoryInfo path, string filename)
+        {
+            File.WriteAllText(Path.Combine(path.FullName, filename), content);
         }
     }
 }

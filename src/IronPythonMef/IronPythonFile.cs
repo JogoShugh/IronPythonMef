@@ -16,14 +16,21 @@ namespace IronPythonMef
         private readonly ScriptEngine _engine;
         private readonly CompositionContainer _mefContainer;
         private readonly ExtractTypesFromScript _extractTypesFromScript;
+        private readonly IEnumerable<Type> _typesToInject;
         private IEnumerable<IronPythonComposablePart> _currentParts;
 
         public IronPythonFile(FileInfo pythonFile, ScriptEngine engine, CompositionContainer mefContainer, ExtractTypesFromScript extractTypesFromScript)
+            : this(pythonFile,engine,mefContainer,extractTypesFromScript, new Type[]{})
+        {
+        }
+        
+        public IronPythonFile(FileInfo pythonFile, ScriptEngine engine, CompositionContainer mefContainer, ExtractTypesFromScript extractTypesFromScript, IEnumerable<Type> typesToInject)
         {
             _pythonFile = pythonFile;
             _engine = engine;
             _mefContainer = mefContainer;
             _extractTypesFromScript = extractTypesFromScript;
+            _typesToInject = typesToInject;
             _currentParts = new List<IronPythonComposablePart>();
         }
 
@@ -34,7 +41,7 @@ namespace IronPythonMef
             IEnumerable<IronPythonComposablePart> newParts = new List<IronPythonComposablePart>();
             try
             {
-                newParts = _extractTypesFromScript.GetPartsFromScript(script).ToList();
+                newParts = _extractTypesFromScript.GetPartsFromScript(script, _typesToInject).ToList();
             }
             catch (SyntaxErrorException e)
             {
