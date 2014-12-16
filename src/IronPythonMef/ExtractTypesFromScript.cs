@@ -20,7 +20,13 @@ namespace IronPythonMef
             _engine = engine;
         }
 
-        public IEnumerable<IronPythonComposablePart> GetPartsFromScript(ScriptSource script, IEnumerable<Type> injectTypes = null)
+        [Obsolete("This should no longer be used as soon as IronPythonScriptCatalog is done")]
+        public IEnumerable<IronPythonComposablePart> GetPartsFromScript(ScriptSource script,
+            IEnumerable<Type> injectTypes = null)
+        {
+            return GetPartDefinitionsFromScript(script, injectTypes).Select(p => p.CreatePart()).Cast<IronPythonComposablePart>();
+        }
+        public IEnumerable<IronPythonComposablePartDefinition> GetPartDefinitionsFromScript(ScriptSource script, IEnumerable<Type> injectTypes = null)
         {
             return GetParts(GetTypesFromScript(script, injectTypes));
         }
@@ -69,7 +75,7 @@ namespace IronPythonMef
 
             return pluginClasses;
         }
-        public IEnumerable<IronPythonComposablePart> GetParts(IEnumerable<IronPythonTypeWrapper> types)
+        public IEnumerable<IronPythonComposablePartDefinition> GetParts(IEnumerable<IronPythonTypeWrapper> types)
         {
             foreach (var definedType in types)
             {
@@ -115,7 +121,7 @@ namespace IronPythonMef
                 var imports =
                     importObjects.Keys
                         .Select(key => new KeyValuePair<string, IronPythonImportDefinition>(key, (IronPythonImportDefinition)importObjects[key]));
-                yield return new IronPythonComposablePart(definedType, exports, imports);
+                yield return new IronPythonComposablePartDefinition(definedType, exports, imports);
             }
         }
     }

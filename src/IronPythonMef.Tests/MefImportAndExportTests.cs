@@ -121,7 +121,7 @@ class StringItemSource(BasePythonItemSource):
 //                                typeof (System.IO.StringReader)
 //                            };
 //            var typeExtractor = new ExtractTypesFromScript(engine);
-//            var exports = typeExtractor.GetPartsFromScript(script, types.ToList()).ToList();
+//            var exports = typeExtractor.GetPartDefinitionsFromScript(script, types.ToList()).ToList();
 
 //            var container = new CompositionContainer();
 //            var batch = new CompositionBatch(exports, new ComposablePart[] { });
@@ -381,7 +381,7 @@ class StringItemSource(BasePythonItemSource):
             var engine = Python.CreateEngine();
             var script = engine.CreateScriptSourceFromString(pythonCode);
             var typeExtractor = new ExtractTypesFromScript(engine);
-            var exports = typeExtractor.GetPartsFromScript(script, _injectTypes).ToList();
+            var exports = typeExtractor.GetPartDefinitionsFromScript(script, _injectTypes).ToList();
 
             Assert.AreEqual(0, exports.Count());
         }

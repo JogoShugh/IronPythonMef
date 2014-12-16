@@ -6,17 +6,18 @@ using System.Linq;
 
 namespace IronPythonMef
 {
-    public class IronPythonComposablePart : ComposablePart
+    public class IronPythonComposablePartDefinition : ComposablePartDefinition
     {
-        private readonly dynamic _instance;
-        private readonly Dictionary<string, ImportDefinition> _imports;
-        private readonly IList<ExportDefinition> _exports;
         private readonly IronPythonTypeWrapper _typeWrapper;
+        private readonly List<ExportDefinition> _exports;
+        private readonly Dictionary<string, ImportDefinition> _imports;
 
-        public IronPythonComposablePart(IronPythonTypeWrapper typeWrapper, IEnumerable<Type> exports, IEnumerable<KeyValuePair<string, IronPythonImportDefinition>> imports)
+        public IronPythonComposablePartDefinition(IronPythonTypeWrapper typeWrapper, 
+            IEnumerable<Type> exports,
+            IEnumerable<KeyValuePair<string, IronPythonImportDefinition>> imports)
+
         {
             _typeWrapper = typeWrapper;
-            _instance = typeWrapper.Activator();
             _exports = new List<ExportDefinition>(exports.Count());
             _imports = new Dictionary<string, ImportDefinition>(imports.Count());
             foreach (var export in exports)
@@ -42,6 +43,39 @@ namespace IronPythonMef
                     import.Value.Cardinality, import.Value.IsRecomposable, import.Value.IsPrerequisite,
                     CreationPolicy.Any);
             }
+
+        }
+
+
+        public override ComposablePart CreatePart()
+        {
+            return new IronPythonComposablePart(_typeWrapper, _exports, _imports.Values.ToList());
+        }
+
+        public override IEnumerable<ExportDefinition> ExportDefinitions
+        {
+            get { return _exports; }
+        }
+
+        public override IEnumerable<ImportDefinition> ImportDefinitions
+        {
+            get { return _imports.Values; }
+        }
+    }
+
+    public class IronPythonComposablePart : ComposablePart
+    {
+        private readonly dynamic _instance;
+        private readonly IList<ImportDefinition> _imports;
+        private readonly IList<ExportDefinition> _exports;
+        private readonly IronPythonTypeWrapper _typeWrapper;
+
+        public IronPythonComposablePart(IronPythonTypeWrapper typeWrapper, IList<ExportDefinition> exports, IList<ImportDefinition> imports)
+        {
+            _typeWrapper = typeWrapper;
+            _exports = exports;
+            _imports = imports;
+            _instance = typeWrapper.Activator();
         }
 
         public dynamic Instance
@@ -51,6 +85,7 @@ namespace IronPythonMef
 
         public override object GetExportedValue(ExportDefinition definition)
         {
+             // TODO: implement create policy
             return _instance;
         }
 
@@ -73,7 +108,7 @@ namespace IronPythonMef
 
         public override IEnumerable<ImportDefinition> ImportDefinitions
         {
-            get { return _imports.Values; }
+            get { return _imports; }
         }
     }
 }
