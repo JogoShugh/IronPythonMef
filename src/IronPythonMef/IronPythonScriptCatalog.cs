@@ -11,31 +11,33 @@ namespace IronPythonMef
     {
         private readonly ScriptEngine _engine;
         private readonly IEnumerable<Type> _typesToInject;
-        private ExtractTypesFromScript _typeExtractor;
-        private string _scriptSource;
-        private IList<IronPythonComposablePartDefinition> _parts;
+        private readonly ExtractTypesFromScript _typeExtractor;
+        private readonly string _scriptSource;
+        private readonly Lazy<IList<IronPythonComposablePartDefinition>> _parts ;
 
         // TODO: arguments make up a "ambient" of types to inject, script source and whatnot
-        public IronPythonScriptCatalog(ScriptEngine engine, TextReader reader, IEnumerable<Type> typesToInject )
+        public IronPythonScriptCatalog(ScriptEngine engine, TextReader reader, IEnumerable<Type> typesToInject)
         {
             _engine = engine;
             _typesToInject = typesToInject;
-            // TODO: don't do this, use a proper CreateScriptFrom*
             _scriptSource = reader.ReadToEnd();
             _typeExtractor = new ExtractTypesFromScript(engine);
+            _parts = new Lazy<IList<IronPythonComposablePartDefinition>>(CreateParts);
         }
 
         public override IQueryable<ComposablePartDefinition> Parts
         {
             get
             {
-                // TODO: locking
-                var source = _engine.CreateScriptSourceFromString(_scriptSource); 
-
-                _parts =  _typeExtractor.GetPartDefinitionsFromScript(source, _typesToInject).ToList();
-                return _parts.AsQueryable();
+                return _parts.Value.AsQueryable();
             }
         }
 
+        private List<IronPythonComposablePartDefinition> CreateParts()
+        {
+            // TODO: don't do this, use a proper CreateScriptFrom*
+            var source = _engine.CreateScriptSourceFromString(_scriptSource);
+            return _typeExtractor.GetPartDefinitionsFromScript(source, _typesToInject).ToList();
+        }
     }
 }

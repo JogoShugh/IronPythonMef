@@ -12,3 +12,5 @@ src/*/[Dd]ebug/*
 src/*/obj/*
 src/*/[Rr]elease*/
 _ReSharper*/
+.IronPythonMef.boltdata/*
+IronPythonMef.sln.DotSettings.user
