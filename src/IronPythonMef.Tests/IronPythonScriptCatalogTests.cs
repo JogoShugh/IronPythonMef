@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
@@ -47,6 +48,50 @@ class StringItemSource(BasePythonItemSource):
             Assert.AreEqual("Item 1", strings[0]);
             Assert.AreEqual("Item 2", strings[1]);
             Assert.AreEqual("Item 3", strings[2]);
+        }
+
+        [Test]
+        public void CanRecomposeFromCatalog()
+        {
+            const string pythonCode =
+@"
+@export(IItemSource)
+class StringItemSource(BasePythonItemSource):
+    def GetAllItems(self):
+        return [""Item 1"", ""Item 2"", ""Item 3""]
+";
+            const string changedPythonCode =
+@"
+@export(IItemSource)
+class StringItemSource(BasePythonItemSource):
+    def GetAllItems(self):
+        return [""Item 2""]
+";
+
+            var pythonCatalog = new IronPythonScriptCatalog(_engine, new StringReader(pythonCode), _injectTypes);
+            var typeCatalog = new TypeCatalog(typeof (ItemSources));
+            var aggregateCatalog = new AggregateCatalog(pythonCatalog,typeCatalog);
+            var container = new CompositionContainer(aggregateCatalog);
+
+            var itemSources = container.GetExportedValues<ItemSources>().First();
+            var strings = itemSources.Sources.SelectMany(s => s.GetItems().Result).Cast<string>().ToList();
+            Assert.AreEqual(3, strings.Count);
+            Assert.AreEqual("Item 1", strings[0]);
+            Assert.AreEqual("Item 2", strings[1]);
+            Assert.AreEqual("Item 3", strings[2]);
+
+            pythonCatalog.Reload(new StringReader(changedPythonCode));
+
+            strings = itemSources.Sources.SelectMany(s => s.GetItems().Result).Cast<string>().ToList();
+            Assert.AreEqual(1, strings.Count);
+            Assert.AreEqual("Item 2", strings[0]);
+        }
+
+        [Export(typeof(ItemSources))]
+        class ItemSources
+        {
+            [ImportMany(typeof(IItemSource), AllowRecomposition = true)]
+            public IEnumerable<IItemSource> Sources { get; set; }
         }
     }
 }
