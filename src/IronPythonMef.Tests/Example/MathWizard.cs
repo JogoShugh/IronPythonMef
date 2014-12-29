@@ -6,6 +6,7 @@ using IronPythonMef.Tests.Example.Operations;
 
 namespace IronPythonMef.Tests.Example
 {
+    [Export(typeof(MathWizard))]
     public class MathWizard
     {
         [ImportMany]

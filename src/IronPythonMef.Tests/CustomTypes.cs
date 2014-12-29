@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Threading.Tasks;
 
 namespace IronPythonMef.Tests
@@ -9,6 +10,18 @@ namespace IronPythonMef.Tests
         string Text { get; }
         Type TypedItemType { get; }
     }
+
+    public interface IDependency
+    {
+        
+    }
+
+    [Export(typeof(IDependency))]
+    public class Dependency : IDependency
+    {
+        
+    }
+
 
     public interface IItemSource
     {

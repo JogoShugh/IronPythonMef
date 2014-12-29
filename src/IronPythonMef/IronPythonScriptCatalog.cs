@@ -4,6 +4,7 @@ using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
 using System.IO;
 using System.Linq;
+using IronPython.Hosting;
 using Microsoft.Scripting.Hosting;
 
 namespace IronPythonMef
@@ -15,9 +16,16 @@ namespace IronPythonMef
         private readonly ExtractTypesFromScript _typeExtractor;
         private string _scriptSource;
         private Lazy<IList<IronPythonComposablePartDefinition>> _parts ;
+        
+        public static Lazy<ScriptEngine> DefaultScriptEngine = new Lazy<ScriptEngine>(Python.CreateEngine);
 
-        // TODO: arguments make up a "ambient" of types to inject, script source and whatnot
-        public IronPythonScriptCatalog(ScriptEngine engine, TextReader reader, IEnumerable<Type> typesToInject)
+
+        public IronPythonScriptCatalog(TextReader reader, params Type[] typesToInject)
+            : this(DefaultScriptEngine.Value, reader, typesToInject)
+        {
+        }
+
+        public IronPythonScriptCatalog(ScriptEngine engine, TextReader reader, params Type[] typesToInject)
         {
             _engine = engine;
             _typesToInject = typesToInject;
