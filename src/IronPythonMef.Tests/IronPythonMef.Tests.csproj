@@ -78,6 +78,7 @@
     <Compile Include="CustomTypes.cs" />
     <Compile Include="EventHelper.cs" />
     <Compile Include="Example\CompositionHelper.cs" />
+    <Compile Include="Example\Demo.cs" />
     <Compile Include="Example\MathWizard.cs" />
     <Compile Include="Example\MathWizardTests.cs" />
     <Compile Include="Example\Operations\IMathCheatSheet.cs" />
