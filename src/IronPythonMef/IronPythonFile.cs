@@ -16,25 +16,34 @@ namespace IronPythonMef
         private readonly ScriptEngine _engine;
         private readonly CompositionContainer _mefContainer;
         private readonly ExtractTypesFromScript _extractTypesFromScript;
-        private IEnumerable<IronPythonComposablePart> _currentParts;
+        private readonly IEnumerable<Type> _typesToInject;
+        private List<ComposablePart> _currentParts;
 
         public IronPythonFile(FileInfo pythonFile, ScriptEngine engine, CompositionContainer mefContainer, ExtractTypesFromScript extractTypesFromScript)
+            : this(pythonFile,engine,mefContainer,extractTypesFromScript, new Type[]{})
+        {
+        }
+        
+        public IronPythonFile(FileInfo pythonFile, ScriptEngine engine, CompositionContainer mefContainer, ExtractTypesFromScript extractTypesFromScript, IEnumerable<Type> typesToInject)
         {
             _pythonFile = pythonFile;
             _engine = engine;
             _mefContainer = mefContainer;
             _extractTypesFromScript = extractTypesFromScript;
-            _currentParts = new List<IronPythonComposablePart>();
+            _typesToInject = typesToInject;
+            _currentParts = new List<ComposablePart>();
         }
 
         public void Compose()
         {
             var script = _engine.CreateScriptSourceFromFile(_pythonFile.FullName);
-            IEnumerable<IronPythonComposablePart> previousParts = _currentParts;
-            IEnumerable<IronPythonComposablePart> newParts = new List<IronPythonComposablePart>();
+            List<ComposablePart> previousParts = _currentParts;
+            List<ComposablePart> newParts = new List<ComposablePart>();
             try
             {
-                newParts = _extractTypesFromScript.GetPartsFromScript(script).ToList();
+                // TODO: yeah, this would no longer be needed because we'd be able to invoke recomposition from the catalog?
+                // by raising an event, perhaps?
+                newParts = _extractTypesFromScript.GetPartDefinitionsFromScript(script, _typesToInject).Select(p => p.CreatePart()).ToList();
             }
             catch (SyntaxErrorException e)
             {
@@ -53,7 +62,7 @@ namespace IronPythonMef
         {
             var batch = new CompositionBatch(new ComposablePart[] {}, _currentParts);
             _mefContainer.Compose(batch);
-            _currentParts = new List<IronPythonComposablePart>();
+            _currentParts = new List<ComposablePart>();
         }
 
         public class PythonException : Exception

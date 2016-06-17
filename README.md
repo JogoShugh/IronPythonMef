@@ -23,9 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
-using System.ComponentModel.Composition.Primitives;
 using System.Reflection;
-using IronPython.Hosting;
 using IronPythonMef;
 
 namespace IronPythonMefInAMinute
@@ -46,25 +44,25 @@ namespace IronPythonMefInAMinute
     public static class PythonScript
     {
         public static readonly string Code =
-@"
+            @"
 @export(IMessenger)
 class PythonMessenger(IMessenger):
-    def GetMessage(self):
-        return self.config.Intro + ' from IronPython'
+def GetMessage(self):
+    return self.config.Intro + ' from IronPython'
 
-    @import_one(IConfig)
-    def import_config(self, config):
-        self.config = config
+@import_one(IConfig)
+def import_config(self, config):
+    self.config = config
 ";
     }
 
     /// <summary>
     /// Also gets exported into the Demo instance.
     /// </summary>
-    [Export(typeof(IMessenger))]
+    [Export(typeof (IMessenger))]
     public class ClrMessenger : IMessenger
     {
-        [Import(typeof(IConfig))]
+        [Import(typeof (IConfig))]
         public IConfig Config { get; set; }
 
         public string GetMessage()
@@ -76,7 +74,7 @@ class PythonMessenger(IMessenger):
     /// <summary>
     /// This will get imported into both the IronPython class and ClrMessenger.
     /// </summary>
-    [Export(typeof(IConfig))]
+    [Export(typeof (IConfig))]
     public class Config : IConfig
     {
         public string Intro
@@ -87,28 +85,23 @@ class PythonMessenger(IMessenger):
 
     public class Demo
     {
-        [ImportMany(typeof(IMessenger))]
+        [ImportMany(typeof (IMessenger))]
         public IEnumerable<IMessenger> Messengers { get; set; }
 
         public Demo()
         {
-            // Create IronPython
-            var engine = Python.CreateEngine();
-            var script = engine.CreateScriptSourceFromString(PythonScript.Code);
+            // Extra types you might want to inject into the python script scope
+            var typesYouWantPythonToHaveAccessTo = new[] {typeof (IMessenger), typeof (IConfig)};
 
-            // Configure the engine with types
-            var typesYouWantPythonToHaveAccessTo = new[] { typeof(IMessenger), typeof(IConfig) };
-            var typeExtractor = new ExtractTypesFromScript(engine);
-            var exports = typeExtractor.GetPartsFromScript(script,
+            // Create an IronPython script MEF Catalog using a default Python engine
+            var ironpythonCatalog = new IronPythonScriptCatalog(new StringReader(PythonScript.Code),
                 typesYouWantPythonToHaveAccessTo);
-
             // Compose with MEF
             var catalog = new AssemblyCatalog(Assembly.GetExecutingAssembly());
-            var container = new CompositionContainer(catalog);
-            var batch = new CompositionBatch(exports, new ComposablePart[] { });
-            container.Compose(batch);
+            var container = new CompositionContainer(new AggregateCatalog(catalog, ironpythonCatalog));
             container.SatisfyImportsOnce(this);
         }
+
 
         public static void Main(string[] args)
         {
@@ -123,6 +116,7 @@ class PythonMessenger(IMessenger):
         }
     }
 }
+
 ```
 The output is simply:
 
@@ -253,7 +247,9 @@ namespace IronPythonMef.Tests.Example.Operations
 ## When I run this NUnit test:
 
 ```c#
+using System.ComponentModel.Composition.Hosting;
 using System.Linq;
+using System.Reflection;
 using IronPythonMef.Tests.Example.Operations;
 using NUnit.Framework;
 
@@ -265,28 +261,34 @@ namespace IronPythonMef.Tests.Example
         [Test]
         public void runs_script_with_operations_from_both_csharp_and_python()
         {
-            var mathWiz = new MathWizard();
+            var currentAssemblyCatalog = new AssemblyCatalog(Assembly.GetExecutingAssembly());
+            var ironPythonScriptCatalog = new IronPythonScriptCatalog(
+                new CompositionHelper().GetResourceScript("Operations.Python.py"),
+                typeof (IMathCheatSheet), typeof (IOperation));
 
-            new CompositionHelper().ComposeWithTypesExportedFromPythonAndCSharp(
-                mathWiz,
-                "Operations.Python.py",
-                typeof(IOperation));
+            var masterCatalog = new AggregateCatalog(currentAssemblyCatalog, ironPythonScriptCatalog);
+         
+            var container = new CompositionContainer(masterCatalog);
+            var mathWiz = container.GetExportedValue<MathWizard>();
 
             const string mathScript =
 @"fib 6
 fac 6
 abs -99
 pow 2 4
+crc 3
 ";
             var results = mathWiz.ExecuteScript(mathScript).ToList();
-
+            Assert.AreEqual(5, results.Count);
             Assert.AreEqual(8, results[0]);
             Assert.AreEqual(720, results[1]);
             Assert.AreEqual(99f, results[2]);
             Assert.AreEqual(16m, results[3]);
+            Assert.AreEqual(9.4247782230377197d, results[4]);
         }
     }
 }
+
 ```
 ## Then, the test will __pass__!
 
@@ -294,61 +296,18 @@ pow 2 4
 
 __Whoah, that sounds like _crazy talk_!__ Really? Not anymore! Here's how the unit test does it:
 
-## CompositionHelper.cs:
-
 ```c#
-using System;
-using System.ComponentModel.Composition;
-using System.ComponentModel.Composition.Hosting;
-using System.ComponentModel.Composition.Primitives;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using IronPython.Hosting;
-using Microsoft.Scripting.Hosting;
-
-namespace IronPythonMef.Tests.Example
-{
-    public class CompositionHelper
-    {
-        public void ComposeWithTypesExportedFromPythonAndCSharp(
-            object compositionTarget,
-            string scriptsToImport,
-            params Type[] typesToImport)
-        {
-            ScriptSource script;
-            var engine = Python.CreateEngine();
-            using (var scriptStream = GetType().Assembly.
-                GetManifestResourceStream(GetType(), scriptsToImport))
-            using (var scriptText = new StreamReader(scriptStream))
-            {
-                script = engine.CreateScriptSourceFromString(scriptText.ReadToEnd());
-            }
-
-            var typeExtractor = new ExtractTypesFromScript(engine);
-            var exports = typeExtractor.GetPartsFromScript(script, typesToImport).ToList();
-
-            var catalog = new AssemblyCatalog(Assembly.GetExecutingAssembly());
-
-            var container = new CompositionContainer(catalog);
-            var batch = new CompositionBatch(exports, new ComposablePart[] { });
-            container.Compose(batch);
-            
-            container.SatisfyImportsOnce(compositionTarget);
-        }
-    }
-}
+            var ironPythonScriptCatalog = new IronPythonScriptCatalog(
+                new CompositionHelper().GetResourceScript("Operations.Python.py"),
+                typeof (IMathCheatSheet), typeof (IOperation));
 ```
-In the code from the unit test, the `"Operations.Python.py"` is an embedded resource. It could also be a script on disk.
+
+We have a MEF catalog that can parse IronPython scripts (in this case it's an embedded resource called Python.Py), injecting extra items into the scope (in this case, two types that will be used for importing and exporting).
+
+All other code is standard MEF code, now.
 
 Note that Bruno Lopes has some more sophisticated examples in his code base, [such as import-on-start, and recomposition when files change or are added](https://github.com/brunomlopes/ILoveLucene/blob/master/src/Plugins/IronPython/IronPythonCommandsMefExport.cs). If I can find time or get the assistance to do so, I'll incorporate similar features into this.
 
-```c#
-new CompositionHelper().ComposeWithTypesExportedFromPythonAndCSharp(
-    mathWiz,
-    "Operations.Python.py",
-    typeof(IOperation));
-```
 # Importing from the CLR into IronPython
 
 This works too. It's not shown above, but the test cases and the MathWizard example has it.
